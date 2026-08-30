@@ -7,21 +7,34 @@ A mobile-first public-information website for quickly finding Florida law-enforc
 - Fast city / county / agency search
 - ZIP-code lookup with Florida place resolution
 - One-tap `tel:` calling on mobile
-- Official-source links on every curated result
+- Direct official-source links on every published result
 - Verification dates stored with each record
-- Safe fallback when a number has not yet been verified
+- Safe fallback when a number has not yet been independently verified
 - GitHub Pages-friendly static architecture
 - No account, server, database, or API key required
 
-## Important data rule
+## Source policy
 
-Only put a phone number in `data/agencies.js` when an official agency or government source explicitly identifies it as a **non-emergency**, **dispatch non-emergency**, or equivalent public calls-for-service number.
+**The phone number itself must come from the law-enforcement agency's official website or an official city/county government page for that agency.**
 
-Do not copy a generic main-office number from a directory and label it as non-emergency.
+The project does not use FDLE, commercial directories, Google business listings, social-media profiles, or other third-party directories as the authority for a published non-emergency number.
+
+A number is only published when the official source explicitly identifies it as one of the following:
+
+- Non-emergency
+- Non-emergency dispatch
+- Communications / dispatch number for routine calls for service
+- Equivalent wording that clearly tells the public to use the number for a non-emergency police or sheriff response
+
+Generic administration, records, jail, chief/sheriff office, and switchboard numbers are not to be relabeled as non-emergency numbers.
+
+If official sources conflict, the record remains unpublished until the discrepancy is resolved.
 
 ## Adding an agency
 
-Edit `data/agencies.js` and add an object:
+The original seed records are in `data/agencies.js`. Independently researched expansion records are in `data/verified-expansion.js`.
+
+Each record follows this structure:
 
 ```js
 {
@@ -33,28 +46,30 @@ Edit `data/agencies.js` and add an object:
   zips: ["32000"],
   phone: "555-555-5555",
   phoneLabel: "Non-Emergency",
-  source: "https://official-government-source.example/",
+  source: "https://official-agency-or-government-source.example/",
   verified: "2026-08-29"
 }
 ```
-
-## Data sources
-
-The statewide agency roster can be cross-referenced against the Florida Department of Law Enforcement Criminal Justice Standards & Training Commission directories. Individual non-emergency numbers should be verified against each agency's official website or its local government's official website.
-
-FDLE agency links:
-https://www.fdle.state.fl.us/cjstc/publications/criminal-justice-agency-links
-
-FDLE agency addresses/directories:
-https://www.fdle.state.fl.us/cjstc/publications/criminal-justice-agency-addresses
 
 ## ZIP lookup
 
 If a five-digit ZIP is not directly present in the curated data, the browser uses the public Zippopotam.us endpoint to resolve the ZIP to a Florida place name, then searches the local directory again. No API key is required.
 
+ZIP-to-jurisdiction mapping should be treated separately from phone-number verification because ZIP boundaries do not always match police jurisdiction boundaries.
+
+## Verification workflow
+
+1. Identify the Florida sheriff, municipal police department, or other law-enforcement agency.
+2. Find the agency's official website or official local-government police page.
+3. Locate the page that explicitly publishes the public non-emergency / dispatch number.
+4. Confirm the number is for public calls for service rather than administration or records.
+5. Store the exact source URL and the date checked.
+6. Do not publish unresolved or conflicting records.
+7. Periodically re-check published records for changes.
+
 ## Deployment
 
-The site is static. Enable GitHub Pages for the repository using the `main` branch and root (`/`) folder.
+The site is static and deploys through GitHub Pages from this repository.
 
 ## Disclaimer
 
