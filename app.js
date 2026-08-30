@@ -1,9 +1,20 @@
-const agencies = Array.isArray(window.FL_AGENCIES) ? window.FL_AGENCIES : [];
+const rawAgencies = Array.isArray(window.FL_AGENCIES) ? window.FL_AGENCIES : [];
+const agencies = Array.from(
+  new Map(
+    rawAgencies.map(agency => [
+      `${String(agency.agency).toLowerCase()}|${String(agency.phone).replace(/\D/g, '')}`,
+      agency
+    ])
+  ).values()
+);
+
 const form = document.getElementById('searchForm');
 const input = document.getElementById('searchInput');
 const results = document.getElementById('results');
 const resultsTitle = document.getElementById('resultsTitle');
 const resultCount = document.getElementById('resultCount');
+const browseAll = document.getElementById('browseAll');
+const directoryCount = document.getElementById('directoryCount');
 
 const normalize = (value = '') => value
   .toLowerCase()
@@ -15,6 +26,10 @@ const normalize = (value = '') => value
 
 const compactPhone = phone => phone.replace(/\D/g, '');
 const escapeHtml = value => String(value).replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+
+if (directoryCount) {
+  directoryCount.textContent = `${agencies.length} verified listings`;
+}
 
 function searchableText(agency) {
   return normalize([
@@ -54,12 +69,12 @@ function findMatches(query) {
     .map(agency => ({ agency, score: scoreAgency(agency, query) }))
     .filter(item => item.score > 0)
     .sort((a, b) => b.score - a.score || a.agency.agency.localeCompare(b.agency.agency))
-    .slice(0, 8)
+    .slice(0, 12)
     .map(item => item.agency);
 }
 
 function resultCard(agency) {
-  const areas = (agency.areas || []).slice(0, 5).join(' • ');
+  const areas = (agency.areas || []).slice(0, 7).join(' • ');
   return `
     <article class="result-card">
       <div class="result-top">
@@ -85,11 +100,20 @@ function resultCard(agency) {
     </article>`;
 }
 
-function showMatches(matches, label) {
+function showMatches(matches, label, scroll = true) {
   resultsTitle.textContent = label;
-  resultCount.textContent = `${matches.length} ${matches.length === 1 ? 'match' : 'matches'}`;
+  resultCount.textContent = `${matches.length} ${matches.length === 1 ? 'listing' : 'listings'}`;
   results.innerHTML = matches.map(resultCard).join('');
-  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (scroll) results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showDirectory() {
+  const sorted = [...agencies].sort((a, b) =>
+    a.county.localeCompare(b.county) || a.agency.localeCompare(b.agency)
+  );
+  input.value = '';
+  history.replaceState(null, '', window.location.pathname);
+  showMatches(sorted, 'All verified Florida agencies');
 }
 
 function noMatch(query, resolvedPlace = '') {
@@ -129,6 +153,10 @@ async function runSearch(rawQuery) {
     return;
   }
 
+  const url = new URL(window.location.href);
+  url.searchParams.set('q', query);
+  history.replaceState(null, '', `${url.pathname}?${url.searchParams.toString()}`);
+
   let matches = findMatches(query);
   if (matches.length) {
     showMatches(matches, `Results for “${query}”`);
@@ -164,6 +192,10 @@ document.querySelectorAll('[data-query]').forEach(button => {
     runSearch(button.dataset.query);
   });
 });
+
+if (browseAll) {
+  browseAll.addEventListener('click', showDirectory);
+}
 
 const params = new URLSearchParams(window.location.search);
 const initialQuery = params.get('q');
