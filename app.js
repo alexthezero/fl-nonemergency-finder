@@ -16,6 +16,10 @@ const resultCount = document.getElementById('resultCount');
 const browseAll = document.getElementById('browseAll');
 const directoryCount = document.getElementById('directoryCount');
 const countyCoverage = document.getElementById('countyCoverage');
+const countyFilter = document.getElementById('countyFilter');
+const typeFilter = document.getElementById('typeFilter');
+const applyFilters = document.getElementById('applyFilters');
+const clearFilters = document.getElementById('clearFilters');
 
 const normalize = (value = '') => value
   .toLowerCase()
@@ -37,6 +41,26 @@ const countyLawEnforcement = new Set(
     .filter(Boolean)
 );
 if (countyCoverage) countyCoverage.textContent = `${countyLawEnforcement.size}/67 county jurisdictions`;
+
+const counties = [...new Set(agencies.map(a => a.county).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+const agencyTypes = [...new Set(agencies.map(a => a.type).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+if (countyFilter) {
+  counties.forEach(county => {
+    const option = document.createElement('option');
+    option.value = county;
+    option.textContent = `${county} County`;
+    countyFilter.appendChild(option);
+  });
+}
+if (typeFilter) {
+  agencyTypes.forEach(type => {
+    const option = document.createElement('option');
+    option.value = type;
+    option.textContent = type;
+    typeFilter.appendChild(option);
+  });
+}
 
 function searchableText(agency) {
   return normalize([
@@ -71,7 +95,7 @@ function findMatches(query) {
     .map(agency => ({ agency, score: scoreAgency(agency, query) }))
     .filter(item => item.score > 0)
     .sort((a, b) => b.score - a.score || a.agency.agency.localeCompare(b.agency.agency))
-    .slice(0, 12)
+    .slice(0, 14)
     .map(item => item.agency);
 }
 
@@ -105,15 +129,29 @@ function resultCard(agency) {
 function showMatches(matches, label, scroll = true) {
   resultsTitle.textContent = label;
   resultCount.textContent = `${matches.length} ${matches.length === 1 ? 'listing' : 'listings'}`;
-  results.innerHTML = matches.map(resultCard).join('');
+  results.innerHTML = matches.length ? matches.map(resultCard).join('') : `
+    <div class="empty-state"><div class="empty-icon">⌕</div><h3>No listings match those filters.</h3><p>Try another county or agency type.</p></div>`;
   if (scroll) results.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+function sortedDirectory(list = agencies) {
+  return [...list].sort((a, b) => a.county.localeCompare(b.county) || a.agency.localeCompare(b.agency));
+}
+
 function showDirectory() {
-  const sorted = [...agencies].sort((a, b) => a.county.localeCompare(b.county) || a.agency.localeCompare(b.agency));
+  if (countyFilter) countyFilter.value = '';
+  if (typeFilter) typeFilter.value = '';
   input.value = '';
   history.replaceState(null, '', window.location.pathname);
-  showMatches(sorted, 'All verified Florida agencies');
+  showMatches(sortedDirectory(), 'All verified Florida agencies');
+}
+
+function showFilteredDirectory() {
+  const county = countyFilter?.value || '';
+  const type = typeFilter?.value || '';
+  const filtered = agencies.filter(agency => (!county || agency.county === county) && (!type || agency.type === type));
+  const labels = [county ? `${county} County` : '', type].filter(Boolean);
+  showMatches(sortedDirectory(filtered), labels.length ? labels.join(' • ') : 'All verified Florida agencies');
 }
 
 function noMatch(query, resolvedPlace = '') {
@@ -126,9 +164,7 @@ function noMatch(query, resolvedPlace = '') {
       <div class="empty-icon" aria-hidden="true">!</div>
       <h3>This area has not been independently verified yet.</h3>
       <p>This directory only publishes numbers confirmed on an official law-enforcement agency or government website. Rather than guess or rely on a third-party directory, the finder stops here.</p>
-      <div class="fallback-actions">
-        <a class="fallback-button" href="https://www.google.com/search?q=${googleQuery}" target="_blank" rel="noopener noreferrer">Search official agency sites</a>
-      </div>
+      <div class="fallback-actions"><a class="fallback-button" href="https://www.google.com/search?q=${googleQuery}" target="_blank" rel="noopener noreferrer">Search official agency sites</a></div>
     </div>`;
   results.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -141,9 +177,7 @@ async function resolveZip(zip) {
     const place = data.places?.[0];
     if (!place || place['state abbreviation'] !== 'FL') return null;
     return place['place name'];
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 async function runSearch(rawQuery) {
@@ -170,6 +204,8 @@ async function runSearch(rawQuery) {
 form.addEventListener('submit', event => { event.preventDefault(); runSearch(input.value); });
 document.querySelectorAll('[data-query]').forEach(button => button.addEventListener('click', () => { input.value = button.dataset.query; runSearch(button.dataset.query); }));
 if (browseAll) browseAll.addEventListener('click', showDirectory);
+if (applyFilters) applyFilters.addEventListener('click', showFilteredDirectory);
+if (clearFilters) clearFilters.addEventListener('click', () => { if (countyFilter) countyFilter.value = ''; if (typeFilter) typeFilter.value = ''; showDirectory(); });
 
 const params = new URLSearchParams(window.location.search);
 const initialQuery = params.get('q');
