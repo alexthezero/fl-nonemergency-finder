@@ -15,10 +15,7 @@
   <header class="site-header">
     <a class="brand" href="./" aria-label="Florida Non-Emergency Finder home">
       <span class="brand-mark" aria-hidden="true">FL</span>
-      <span>
-        <strong>Non-Emergency Finder</strong>
-        <small>Florida law enforcement</small>
-      </span>
+      <span><strong>Non-Emergency Finder</strong><small>Florida law enforcement</small></span>
     </a>
     <a class="emergency-link" href="tel:911">Emergency? <strong>Call 911</strong></a>
   </header>
@@ -40,30 +37,37 @@
         </form>
 
         <div class="directory-summary" aria-live="polite">
-          <strong id="directoryCount">Loading directory…</strong>
-          <span>•</span>
-          <strong id="countyCoverage">Checking county coverage…</strong>
+          <strong id="directoryCount">Loading directory…</strong><span>•</span><strong id="countyCoverage">Checking county coverage…</strong>
         </div>
 
         <div class="quick-searches" aria-label="Directory actions and example searches">
           <button type="button" id="browseAll" class="browse-all">Browse all verified agencies</button>
           <span>Try:</span>
           <button type="button" data-query="Palm Coast">Palm Coast</button>
+          <button type="button" data-query="Miami">Miami</button>
           <button type="button" data-query="Orlando">Orlando</button>
           <button type="button" data-query="Tampa">Tampa</button>
-          <button type="button" data-query="Pensacola">Pensacola</button>
         </div>
       </div>
     </section>
 
     <section class="results-section" aria-live="polite" aria-atomic="false">
       <div class="results-header">
-        <div>
-          <p class="section-kicker">DIRECTORY</p>
-          <h2 id="resultsTitle">Search Florida</h2>
-        </div>
+        <div><p class="section-kicker">DIRECTORY</p><h2 id="resultsTitle">Search Florida</h2></div>
         <span id="resultCount" class="result-count"></span>
       </div>
+
+      <div class="directory-tools" aria-label="Directory filters">
+        <label>County
+          <select id="countyFilter"><option value="">All counties</option></select>
+        </label>
+        <label>Agency type
+          <select id="typeFilter"><option value="">All agency types</option></select>
+        </label>
+        <button type="button" id="applyFilters">Browse directory</button>
+        <button type="button" id="clearFilters" class="secondary-tool">Clear</button>
+      </div>
+
       <div id="results" class="results-grid">
         <div class="empty-state">
           <div class="empty-icon" aria-hidden="true">⌕</div>
@@ -74,27 +78,9 @@
     </section>
 
     <section class="info-strip">
-      <article>
-        <span class="info-icon" aria-hidden="true">✓</span>
-        <div>
-          <h3>Independently verified</h3>
-          <p>Published numbers are checked directly against the law-enforcement agency or official local-government website.</p>
-        </div>
-      </article>
-      <article>
-        <span class="info-icon" aria-hidden="true">☎</span>
-        <div>
-          <h3>Statewide county coverage</h3>
-          <p>All 67 Florida county sheriff or consolidated county law-enforcement jurisdictions are represented, with municipal agencies continuing to be added.</p>
-        </div>
-      </article>
-      <article>
-        <span class="info-icon" aria-hidden="true">!</span>
-        <div>
-          <h3>Not for emergencies</h3>
-          <p>If there is immediate danger, a crime in progress, fire, or a medical emergency, call 911.</p>
-        </div>
-      </article>
+      <article><span class="info-icon" aria-hidden="true">✓</span><div><h3>Independently verified</h3><p>Published numbers are checked directly against the law-enforcement agency or official local-government website.</p></div></article>
+      <article><span class="info-icon" aria-hidden="true">☎</span><div><h3>Statewide county coverage</h3><p>All 67 Florida county sheriff or consolidated county law-enforcement jurisdictions are represented, plus a growing municipal police directory.</p></div></article>
+      <article><span class="info-icon" aria-hidden="true">!</span><div><h3>Not for emergencies</h3><p>If there is immediate danger, a crime in progress, fire, or a medical emergency, call 911.</p></div></article>
     </section>
   </main>
 
@@ -107,6 +93,7 @@
   <script src="data/agencies-expanded.js"></script>
   <script src="data/county-completion.js"></script>
   <script src="data/municipal-extra.js"></script>
+  <script src="data/major-municipal.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
