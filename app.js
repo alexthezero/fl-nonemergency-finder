@@ -21,6 +21,14 @@ const typeFilter = document.getElementById('typeFilter');
 const applyFilters = document.getElementById('applyFilters');
 const clearFilters = document.getElementById('clearFilters');
 
+const ZIP_JURISDICTION_OVERRIDES = {
+  '32259': {
+    agencyNames: ["St. Johns County Sheriff's Office", "Jacksonville Sheriff's Office"],
+    title: 'ZIP 32259 crosses county jurisdictions',
+    note: 'Most 32259 addresses are in St. Johns County, but a small portion reaches Duval County. Use the agency for the county where the incident or property is physically located—not the mailing city shown for the ZIP.'
+  }
+};
+
 const normalize = (value = '') => value
   .toLowerCase()
   .normalize('NFD')
@@ -95,7 +103,6 @@ function findMatches(query) {
     .map(agency => ({ agency, score: scoreAgency(agency, query) }))
     .filter(item => item.score > 0)
     .sort((a, b) => b.score - a.score || a.agency.agency.localeCompare(b.agency.agency))
-    .slice(0, 14)
     .map(item => item.agency);
 }
 
@@ -126,6 +133,68 @@ function resultCard(agency) {
     </article>`;
 }
 
+function ensureSearchOverlay() {
+  let overlay = document.getElementById('searchResultOverlay');
+  if (overlay) return overlay;
+  overlay = document.createElement('div');
+  overlay.id = 'searchResultOverlay';
+  overlay.className = 'search-result-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-hidden', 'true');
+  overlay.innerHTML = `
+    <div class="search-result-shell">
+      <div class="search-result-header">
+        <div>
+          <div class="section-kicker">SEARCH RESULT</div>
+          <h2 id="searchOverlayTitle">Result</h2>
+        </div>
+        <button type="button" class="overlay-close" id="closeSearchOverlay" aria-label="Close search result">×</button>
+      </div>
+      <div id="searchOverlayNote" class="jurisdiction-note" hidden></div>
+      <div id="searchOverlayCards" class="search-overlay-cards"></div>
+      <button type="button" class="new-search-button" id="newSearchButton">Search another location</button>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const close = () => closeSearchOverlay();
+  overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+  overlay.querySelector('#closeSearchOverlay').addEventListener('click', close);
+  overlay.querySelector('#newSearchButton').addEventListener('click', () => {
+    close();
+    input.value = '';
+    input.focus();
+  });
+  return overlay;
+}
+
+function showSearchOverlay(matches, label, note = '') {
+  const overlay = ensureSearchOverlay();
+  const title = overlay.querySelector('#searchOverlayTitle');
+  const noteEl = overlay.querySelector('#searchOverlayNote');
+  const cards = overlay.querySelector('#searchOverlayCards');
+  title.textContent = label;
+  noteEl.hidden = !note;
+  noteEl.textContent = note;
+  cards.innerHTML = matches.map(resultCard).join('');
+  overlay.classList.add('is-open');
+  overlay.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('search-overlay-open');
+  overlay.querySelector('.call-button, .overlay-close')?.focus({ preventScroll: true });
+}
+
+function closeSearchOverlay() {
+  const overlay = document.getElementById('searchResultOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('is-open');
+  overlay.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('search-overlay-open');
+}
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeSearchOverlay();
+});
+
 function showMatches(matches, label, scroll = true) {
   resultsTitle.textContent = label;
   resultCount.textContent = `${matches.length} ${matches.length === 1 ? 'listing' : 'listings'}`;
@@ -139,6 +208,7 @@ function sortedDirectory(list = agencies) {
 }
 
 function showDirectory() {
+  closeSearchOverlay();
   if (countyFilter) countyFilter.value = '';
   if (typeFilter) typeFilter.value = '';
   input.value = '';
@@ -147,6 +217,7 @@ function showDirectory() {
 }
 
 function showFilteredDirectory() {
+  closeSearchOverlay();
   const county = countyFilter?.value || '';
   const type = typeFilter?.value || '';
   const filtered = agencies.filter(agency => (!county || agency.county === county) && (!type || agency.type === type));
@@ -157,16 +228,20 @@ function showFilteredDirectory() {
 function noMatch(query, resolvedPlace = '') {
   const location = resolvedPlace || query;
   const googleQuery = encodeURIComponent(`${location} Florida police sheriff non-emergency official site`);
-  resultsTitle.textContent = `No verified match yet for “${location}”`;
-  resultCount.textContent = '';
-  results.innerHTML = `
+  const overlay = ensureSearchOverlay();
+  overlay.querySelector('#searchOverlayTitle').textContent = `No verified match for “${location}”`;
+  const noteEl = overlay.querySelector('#searchOverlayNote');
+  noteEl.hidden = true;
+  overlay.querySelector('#searchOverlayCards').innerHTML = `
     <div class="empty-state">
       <div class="empty-icon" aria-hidden="true">!</div>
       <h3>This area has not been independently verified yet.</h3>
-      <p>This directory only publishes numbers confirmed on an official law-enforcement agency or government website. Rather than guess or rely on a third-party directory, the finder stops here.</p>
+      <p>This directory only publishes numbers confirmed on an official law-enforcement agency or government website.</p>
       <div class="fallback-actions"><a class="fallback-button" href="https://www.google.com/search?q=${googleQuery}" target="_blank" rel="noopener noreferrer">Search official agency sites</a></div>
     </div>`;
-  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  overlay.classList.add('is-open');
+  overlay.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('search-overlay-open');
 }
 
 async function resolveZip(zip) {
@@ -180,24 +255,48 @@ async function resolveZip(zip) {
   } catch { return null; }
 }
 
+function agenciesForOverride(override) {
+  return override.agencyNames
+    .map(name => agencies.find(agency => agency.agency === name))
+    .filter(Boolean);
+}
+
 async function runSearch(rawQuery) {
   const query = rawQuery.trim();
   if (!query) return input.focus();
+
   const url = new URL(window.location.href);
   url.searchParams.set('q', query);
   history.replaceState(null, '', `${url.pathname}?${url.searchParams.toString()}`);
+
+  if (/^\d{5}$/.test(query) && ZIP_JURISDICTION_OVERRIDES[query]) {
+    const override = ZIP_JURISDICTION_OVERRIDES[query];
+    const overrideAgencies = agenciesForOverride(override);
+    if (overrideAgencies.length) {
+      showSearchOverlay(overrideAgencies, override.title, override.note);
+      return;
+    }
+  }
+
   let matches = findMatches(query);
-  if (matches.length) return showMatches(matches, `Results for “${query}”`);
+  if (matches.length) {
+    showSearchOverlay([matches[0]], `Best match for “${query}”`);
+    return;
+  }
+
   if (/^\d{5}$/.test(query)) {
-    resultsTitle.textContent = `Checking ZIP ${query}…`;
-    resultCount.textContent = '';
     const place = await resolveZip(query);
     if (place) {
       matches = findMatches(place);
-      if (matches.length) return showMatches(matches, `${place}, FL • ZIP ${query}`);
-      return noMatch(query, `${place} (${query})`);
+      if (matches.length) {
+        showSearchOverlay([matches[0]], `${place}, FL • ZIP ${query}`);
+        return;
+      }
+      noMatch(query, `${place} (${query})`);
+      return;
     }
   }
+
   noMatch(query);
 }
 
