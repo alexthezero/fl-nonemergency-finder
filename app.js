@@ -68,7 +68,7 @@ function resultCard(agency) {
           <h3>${escapeHtml(agency.agency)}</h3>
           <div class="location">${escapeHtml(agency.city)}, ${escapeHtml(agency.county)} County, Florida</div>
         </div>
-        <span class="verified">✓ Verified source</span>
+        <span class="verified">✓ Official source</span>
       </div>
       <div class="phone-block">
         <div>
@@ -80,7 +80,7 @@ function resultCard(agency) {
       <div class="meta-row">
         ${areas ? `<span>Serves / matches: ${escapeHtml(areas)}</span>` : ''}
         <span>Checked: ${escapeHtml(agency.verified)}</span>
-        <a href="${escapeHtml(agency.source)}" target="_blank" rel="noopener noreferrer">Official source ↗</a>
+        <a href="${escapeHtml(agency.source)}" target="_blank" rel="noopener noreferrer">Official agency source ↗</a>
       </div>
     </article>`;
 }
@@ -94,18 +94,16 @@ function showMatches(matches, label) {
 
 function noMatch(query, resolvedPlace = '') {
   const location = resolvedPlace || query;
-  const googleQuery = encodeURIComponent(`${location} Florida law enforcement non-emergency number official`);
-  const fdle = 'https://www.fdle.state.fl.us/cjstc/publications/criminal-justice-agency-links';
+  const googleQuery = encodeURIComponent(`${location} Florida police sheriff non-emergency official site`);
   resultsTitle.textContent = `No verified match yet for “${location}”`;
   resultCount.textContent = '';
   results.innerHTML = `
     <div class="empty-state">
       <div class="empty-icon" aria-hidden="true">!</div>
-      <h3>This area has not been added to the curated directory yet.</h3>
-      <p>Rather than guess, the finder stops here. You can check the FDLE agency directory or search for the area's official law-enforcement non-emergency page.</p>
+      <h3>This area has not been independently verified yet.</h3>
+      <p>This directory only publishes numbers confirmed on an official law-enforcement agency or government website. Rather than guess or rely on a third-party directory, the finder stops here.</p>
       <div class="fallback-actions">
-        <a class="fallback-button" href="${fdle}" target="_blank" rel="noopener noreferrer">Open FDLE directory</a>
-        <a class="fallback-button secondary" href="https://www.google.com/search?q=${googleQuery}" target="_blank" rel="noopener noreferrer">Search official results</a>
+        <a class="fallback-button" href="https://www.google.com/search?q=${googleQuery}" target="_blank" rel="noopener noreferrer">Search official agency sites</a>
       </div>
     </div>`;
   results.scrollIntoView({ behavior: 'smooth', block: 'start' });
