@@ -10,22 +10,21 @@ const agencies = Array.from(
 
 const form = document.getElementById('searchForm');
 const input = document.getElementById('searchInput');
-const results = document.getElementById('results');
-const resultsTitle = document.getElementById('resultsTitle');
-const resultCount = document.getElementById('resultCount');
-const browseAll = document.getElementById('browseAll');
+const intro = document.getElementById('finderIntro');
+const resultState = document.getElementById('resultState');
+const resultTitle = document.getElementById('resultTitle');
+const resultNotice = document.getElementById('resultNotice');
+const resultCards = document.getElementById('resultCards');
+const backToSearch = document.getElementById('backToSearch');
+const supportSection = document.getElementById('supportSection');
 const directoryCount = document.getElementById('directoryCount');
 const countyCoverage = document.getElementById('countyCoverage');
-const countyFilter = document.getElementById('countyFilter');
-const typeFilter = document.getElementById('typeFilter');
-const applyFilters = document.getElementById('applyFilters');
-const clearFilters = document.getElementById('clearFilters');
 
 const ZIP_JURISDICTION_OVERRIDES = {
   '32259': {
     agencyNames: ["St. Johns County Sheriff's Office", "Jacksonville Sheriff's Office"],
-    title: 'ZIP 32259 crosses county jurisdictions',
-    note: 'Most 32259 addresses are in St. Johns County, but a small portion reaches Duval County. Use the agency for the county where the incident or property is physically located—not the mailing city shown for the ZIP.'
+    title: 'More than one agency may serve ZIP 32259',
+    note: 'Most 32259 addresses are in St. Johns County, while a smaller portion is in Duval County. Choose the agency for the physical county where the incident or property is located—not only the ZIP mailing city.'
   }
 };
 
@@ -37,10 +36,12 @@ const normalize = (value = '') => value
   .replace(/\s+/g, ' ')
   .trim();
 
-const compactPhone = phone => phone.replace(/\D/g, '');
-const escapeHtml = value => String(value).replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+const compactPhone = phone => String(phone || '').replace(/\D/g, '');
+const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({
+  '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'
+}[char]));
 
-if (directoryCount) directoryCount.textContent = `${agencies.length} verified listings`;
+if (directoryCount) directoryCount.textContent = agencies.length;
 
 const countyLawEnforcement = new Set(
   agencies
@@ -48,27 +49,7 @@ const countyLawEnforcement = new Set(
     .map(agency => normalize(agency.county))
     .filter(Boolean)
 );
-if (countyCoverage) countyCoverage.textContent = `${countyLawEnforcement.size}/67 county jurisdictions`;
-
-const counties = [...new Set(agencies.map(a => a.county).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-const agencyTypes = [...new Set(agencies.map(a => a.type).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-
-if (countyFilter) {
-  counties.forEach(county => {
-    const option = document.createElement('option');
-    option.value = county;
-    option.textContent = `${county} County`;
-    countyFilter.appendChild(option);
-  });
-}
-if (typeFilter) {
-  agencyTypes.forEach(type => {
-    const option = document.createElement('option');
-    option.value = type;
-    option.textContent = type;
-    typeFilter.appendChild(option);
-  });
-}
+if (countyCoverage) countyCoverage.textContent = `${countyLawEnforcement.size}/67`;
 
 function searchableText(agency) {
   return normalize([
@@ -85,16 +66,34 @@ function searchableText(agency) {
 function scoreAgency(agency, rawQuery) {
   const q = normalize(rawQuery);
   if (!q) return 0;
+
+  const agencyName = normalize(agency.agency);
+  const city = normalize(agency.city);
+  const county = normalize(agency.county);
+  const areas = (agency.areas || []).map(normalize);
+  const zips = agency.zips || [];
   const full = searchableText(agency);
-  const fields = [agency.agency, agency.city, agency.county, ...(agency.areas || []), ...(agency.zips || [])].map(normalize);
+  const type = normalize(agency.type);
   let score = 0;
-  if (fields.includes(q)) score += 120;
-  if ((agency.zips || []).includes(rawQuery.trim())) score += 150;
-  if (normalize(agency.agency).startsWith(q)) score += 75;
-  if (normalize(agency.city) === q) score += 90;
-  if (normalize(agency.county) === q || normalize(`${agency.county} county`) === q) score += 85;
-  if (full.includes(q)) score += 45;
-  for (const token of q.split(' ').filter(Boolean)) if (full.includes(token)) score += 10;
+
+  if (agencyName === q) score += 400;
+  else if (agencyName.startsWith(q)) score += 180;
+  else if (agencyName.includes(q)) score += 90;
+
+  if (/^\d{5}$/.test(rawQuery.trim()) && zips.includes(rawQuery.trim())) score += 340;
+  if (areas.includes(q)) score += 230;
+  if (city === q) score += 180;
+  if (county === q || normalize(`${agency.county} county`) === q) score += 190;
+
+  if (city === q && type.includes('police department')) score += 90;
+  if (areas.includes(q) && type.includes('police department')) score += 45;
+  if (county === q && type.includes('sheriff')) score += 70;
+
+  if (full.includes(q)) score += 35;
+  for (const token of q.split(' ').filter(Boolean)) {
+    if (full.includes(token)) score += 8;
+  }
+
   return score;
 }
 
@@ -102,210 +101,223 @@ function findMatches(query) {
   return agencies
     .map(agency => ({ agency, score: scoreAgency(agency, query) }))
     .filter(item => item.score > 0)
-    .sort((a, b) => b.score - a.score || a.agency.agency.localeCompare(b.agency.agency))
-    .map(item => item.agency);
+    .sort((a, b) => b.score - a.score || a.agency.agency.localeCompare(b.agency.agency));
 }
 
-function resultCard(agency) {
-  const areas = (agency.areas || []).slice(0, 7).join(' • ');
+function matchContext(agency, rawQuery, mode = 'direct') {
+  const query = rawQuery.trim();
+  const q = normalize(query);
+  const city = normalize(agency.city);
+  const county = normalize(agency.county);
+  const areas = (agency.areas || []).map(normalize);
+  const exactZip = /^\d{5}$/.test(query) && (agency.zips || []).includes(query);
+
+  if (mode === 'zip-fallback') {
+    return {
+      state: 'likely',
+      badge: 'Likely agency — exact address recommended',
+      reason: `This is the strongest verified match for the place associated with ZIP ${query}. ZIP boundaries can cross law-enforcement jurisdictions, so confirm the physical address if you are near a boundary.`
+    };
+  }
+
+  if (exactZip || areas.includes(q) || city === q || county === q || normalize(`${agency.county} county`) === q) {
+    return {
+      state: 'exact',
+      badge: 'Agency serving this location',
+      reason: exactZip
+        ? `This agency is listed for ZIP ${query} in the verified directory.`
+        : `This agency is the strongest verified jurisdiction match for “${query}.”`
+    };
+  }
+
+  return {
+    state: 'likely',
+    badge: 'Likely agency — exact address recommended',
+    reason: `This is the strongest verified directory match for “${query}.” Confirm the physical jurisdiction if the incident is near a city or county boundary.`
+  };
+}
+
+function resultCard(agency, context) {
+  const phone = compactPhone(agency.phone);
+  const checked = escapeHtml(agency.verified || 'date not listed');
   return `
-    <article class="result-card">
-      <div class="result-top">
-        <div>
-          <div class="agency-type">${escapeHtml(agency.type)}</div>
-          <h3>${escapeHtml(agency.agency)}</h3>
-          <div class="location">${escapeHtml(agency.city)}, ${escapeHtml(agency.county)} County, Florida</div>
-        </div>
-        <span class="verified">✓ Official source</span>
+    <article class="agency-result-card">
+      <div class="confidence-row">
+        <span class="confidence-badge ${escapeHtml(context.state)}">${escapeHtml(context.badge)}</span>
+        <span class="source-badge">✓ Official source verified</span>
       </div>
-      <div class="phone-block">
-        <div>
-          <span class="phone-label">${escapeHtml(agency.phoneLabel || 'Non-Emergency')}</span>
-          <a class="phone-number" href="tel:${compactPhone(agency.phone)}">${escapeHtml(agency.phone)}</a>
-        </div>
-        <a class="call-button" href="tel:${compactPhone(agency.phone)}" aria-label="Call ${escapeHtml(agency.agency)} at ${escapeHtml(agency.phone)}">Call now</a>
+
+      <h3>${escapeHtml(agency.agency)}</h3>
+      <p class="agency-subtitle">${escapeHtml(agency.type)} · ${escapeHtml(agency.county)} County, Florida</p>
+
+      <div class="match-reason">${escapeHtml(context.reason)}</div>
+
+      <div class="phone-panel">
+        <span class="phone-label">${escapeHtml(agency.phoneLabel || 'Non-Emergency')}</span>
+        <a class="phone-number" href="tel:${phone}">${escapeHtml(agency.phone)}</a>
       </div>
-      <div class="meta-row">
-        ${areas ? `<span>Serves / matches: ${escapeHtml(areas)}</span>` : ''}
-        <span>Checked: ${escapeHtml(agency.verified)}</span>
-        <a href="${escapeHtml(agency.source)}" target="_blank" rel="noopener noreferrer">Official agency source ↗</a>
+
+      <div class="result-actions">
+        <a class="primary-action" href="tel:${phone}" aria-label="Call ${escapeHtml(agency.agency)} at ${escapeHtml(agency.phone)}">Call now</a>
+        <a class="secondary-action" href="${escapeHtml(agency.source)}" target="_blank" rel="noopener noreferrer">View official source</a>
       </div>
+
+      <div class="verification-meta">Source checked ${checked}. This project is independent and is not affiliated with the agency.</div>
     </article>`;
 }
 
-function ensureSearchOverlay() {
-  let overlay = document.getElementById('searchResultOverlay');
-  if (overlay) return overlay;
-  overlay = document.createElement('div');
-  overlay.id = 'searchResultOverlay';
-  overlay.className = 'search-result-overlay';
-  overlay.setAttribute('role', 'dialog');
-  overlay.setAttribute('aria-modal', 'true');
-  overlay.setAttribute('aria-hidden', 'true');
-  overlay.innerHTML = `
-    <div class="search-result-shell">
-      <div class="search-result-header">
-        <div>
-          <div class="section-kicker">SEARCH RESULT</div>
-          <h2 id="searchOverlayTitle">Result</h2>
-        </div>
-        <button type="button" class="overlay-close" id="closeSearchOverlay" aria-label="Close search result">×</button>
-      </div>
-      <div id="searchOverlayNote" class="jurisdiction-note" hidden></div>
-      <div id="searchOverlayCards" class="search-overlay-cards"></div>
-      <button type="button" class="new-search-button" id="newSearchButton">Search another location</button>
-    </div>`;
-  document.body.appendChild(overlay);
+function showResultView({ title, cards, notice = '' }) {
+  intro.hidden = true;
+  supportSection.hidden = true;
+  resultState.hidden = false;
+  resultTitle.textContent = title;
 
-  const close = () => closeSearchOverlay();
-  overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
-  overlay.querySelector('#closeSearchOverlay').addEventListener('click', close);
-  overlay.querySelector('#newSearchButton').addEventListener('click', () => {
-    close();
-    input.value = '';
-    input.focus();
+  if (notice) {
+    resultNotice.innerHTML = `<div class="result-notice"><strong>Jurisdiction overlap</strong>${escapeHtml(notice)}</div>`;
+  } else {
+    resultNotice.innerHTML = '';
+  }
+
+  resultCards.innerHTML = cards;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  backToSearch?.focus({ preventScroll: true });
+}
+
+function showAgencyResult(agency, query, mode = 'direct') {
+  const context = matchContext(agency, query, mode);
+  showResultView({
+    title: 'Your non-emergency contact',
+    cards: resultCard(agency, context)
   });
-  return overlay;
 }
 
-function showSearchOverlay(matches, label, note = '') {
-  const overlay = ensureSearchOverlay();
-  const title = overlay.querySelector('#searchOverlayTitle');
-  const noteEl = overlay.querySelector('#searchOverlayNote');
-  const cards = overlay.querySelector('#searchOverlayCards');
-  title.textContent = label;
-  noteEl.hidden = !note;
-  noteEl.textContent = note;
-  cards.innerHTML = matches.map(resultCard).join('');
-  overlay.classList.add('is-open');
-  overlay.setAttribute('aria-hidden', 'false');
-  document.body.classList.add('search-overlay-open');
-  overlay.querySelector('.call-button, .overlay-close')?.focus({ preventScroll: true });
+function showAmbiguousZip(query, override) {
+  const matches = override.agencyNames
+    .map(name => agencies.find(agency => agency.agency === name))
+    .filter(Boolean);
+
+  if (!matches.length) return false;
+
+  const cards = matches.map(agency => resultCard(agency, {
+    state: 'ambiguous',
+    badge: 'May serve this area',
+    reason: `ZIP ${query} crosses jurisdiction boundaries. Use this agency only if the physical incident address is within ${agency.county} County.`
+  })).join('');
+
+  showResultView({
+    title: override.title,
+    cards,
+    notice: override.note
+  });
+  return true;
 }
 
-function closeSearchOverlay() {
-  const overlay = document.getElementById('searchResultOverlay');
-  if (!overlay) return;
-  overlay.classList.remove('is-open');
-  overlay.setAttribute('aria-hidden', 'true');
-  document.body.classList.remove('search-overlay-open');
-}
-
-document.addEventListener('keydown', event => {
-  if (event.key === 'Escape') closeSearchOverlay();
-});
-
-function showMatches(matches, label, scroll = true) {
-  resultsTitle.textContent = label;
-  resultCount.textContent = `${matches.length} ${matches.length === 1 ? 'listing' : 'listings'}`;
-  results.innerHTML = matches.length ? matches.map(resultCard).join('') : `
-    <div class="empty-state"><div class="empty-icon">⌕</div><h3>No listings match those filters.</h3><p>Try another county or agency type.</p></div>`;
-  if (scroll) results.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function sortedDirectory(list = agencies) {
-  return [...list].sort((a, b) => a.county.localeCompare(b.county) || a.agency.localeCompare(b.agency));
-}
-
-function showDirectory() {
-  closeSearchOverlay();
-  if (countyFilter) countyFilter.value = '';
-  if (typeFilter) typeFilter.value = '';
-  input.value = '';
-  history.replaceState(null, '', window.location.pathname);
-  showMatches(sortedDirectory(), 'All verified Florida agencies');
-}
-
-function showFilteredDirectory() {
-  closeSearchOverlay();
-  const county = countyFilter?.value || '';
-  const type = typeFilter?.value || '';
-  const filtered = agencies.filter(agency => (!county || agency.county === county) && (!type || agency.type === type));
-  const labels = [county ? `${county} County` : '', type].filter(Boolean);
-  showMatches(sortedDirectory(filtered), labels.length ? labels.join(' • ') : 'All verified Florida agencies');
-}
-
-function noMatch(query, resolvedPlace = '') {
-  const location = resolvedPlace || query;
+function showNoMatch(location) {
   const googleQuery = encodeURIComponent(`${location} Florida police sheriff non-emergency official site`);
-  const overlay = ensureSearchOverlay();
-  overlay.querySelector('#searchOverlayTitle').textContent = `No verified match for “${location}”`;
-  const noteEl = overlay.querySelector('#searchOverlayNote');
-  noteEl.hidden = true;
-  overlay.querySelector('#searchOverlayCards').innerHTML = `
-    <div class="empty-state">
-      <div class="empty-icon" aria-hidden="true">!</div>
-      <h3>This area has not been independently verified yet.</h3>
-      <p>This directory only publishes numbers confirmed on an official law-enforcement agency or government website.</p>
-      <div class="fallback-actions"><a class="fallback-button" href="https://www.google.com/search?q=${googleQuery}" target="_blank" rel="noopener noreferrer">Search official agency sites</a></div>
-    </div>`;
-  overlay.classList.add('is-open');
-  overlay.setAttribute('aria-hidden', 'false');
-  document.body.classList.add('search-overlay-open');
+  showResultView({
+    title: 'We could not verify the correct agency',
+    cards: `
+      <div class="no-result-card">
+        <h3>No verified jurisdiction match yet</h3>
+        <p>Rather than guess a phone number, the finder stops here. Try a nearby city, county name, or the agency name directly.</p>
+        <div class="result-actions">
+          <a class="primary-action" href="https://www.google.com/search?q=${googleQuery}" target="_blank" rel="noopener noreferrer">Search official agency sites</a>
+          <a class="secondary-action" href="directory/">Browse directory</a>
+        </div>
+      </div>`
+  });
 }
 
 async function resolveZip(zip) {
   try {
-    const response = await fetch(`https://api.zippopotam.us/us/${zip}`, { headers: { Accept: 'application/json' } });
+    const response = await fetch(`https://api.zippopotam.us/us/${zip}`, {
+      headers: { Accept: 'application/json' }
+    });
     if (!response.ok) return null;
     const data = await response.json();
     const place = data.places?.[0];
     if (!place || place['state abbreviation'] !== 'FL') return null;
     return place['place name'];
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
-function agenciesForOverride(override) {
-  return override.agencyNames
-    .map(name => agencies.find(agency => agency.agency === name))
-    .filter(Boolean);
+function updateUrl(query) {
+  const url = new URL(window.location.href);
+  if (query) url.searchParams.set('q', query);
+  else url.searchParams.delete('q');
+  history.replaceState(null, '', `${url.pathname}${url.search}`);
 }
 
 async function runSearch(rawQuery) {
   const query = rawQuery.trim();
-  if (!query) return input.focus();
-
-  const url = new URL(window.location.href);
-  url.searchParams.set('q', query);
-  history.replaceState(null, '', `${url.pathname}?${url.searchParams.toString()}`);
-
-  if (/^\d{5}$/.test(query) && ZIP_JURISDICTION_OVERRIDES[query]) {
-    const override = ZIP_JURISDICTION_OVERRIDES[query];
-    const overrideAgencies = agenciesForOverride(override);
-    if (overrideAgencies.length) {
-      showSearchOverlay(overrideAgencies, override.title, override.note);
-      return;
-    }
+  if (!query) {
+    input.focus();
+    return;
   }
 
-  let matches = findMatches(query);
+  updateUrl(query);
+
+  if (/^\d{5}$/.test(query) && ZIP_JURISDICTION_OVERRIDES[query]) {
+    if (showAmbiguousZip(query, ZIP_JURISDICTION_OVERRIDES[query])) return;
+  }
+
+  const matches = findMatches(query);
   if (matches.length) {
-    showSearchOverlay([matches[0]], `Best match for “${query}”`);
+    showAgencyResult(matches[0].agency, query, 'direct');
     return;
   }
 
   if (/^\d{5}$/.test(query)) {
     const place = await resolveZip(query);
     if (place) {
-      matches = findMatches(place);
-      if (matches.length) {
-        showSearchOverlay([matches[0]], `${place}, FL • ZIP ${query}`);
+      const placeMatches = findMatches(place);
+      if (placeMatches.length) {
+        showAgencyResult(placeMatches[0].agency, query, 'zip-fallback');
         return;
       }
-      noMatch(query, `${place} (${query})`);
+      showNoMatch(`${place} (${query})`);
       return;
     }
   }
 
-  noMatch(query);
+  showNoMatch(query);
 }
 
-form.addEventListener('submit', event => { event.preventDefault(); runSearch(input.value); });
-document.querySelectorAll('[data-query]').forEach(button => button.addEventListener('click', () => { input.value = button.dataset.query; runSearch(button.dataset.query); }));
-if (browseAll) browseAll.addEventListener('click', showDirectory);
-if (applyFilters) applyFilters.addEventListener('click', showFilteredDirectory);
-if (clearFilters) clearFilters.addEventListener('click', () => { if (countyFilter) countyFilter.value = ''; if (typeFilter) typeFilter.value = ''; showDirectory(); });
+function resetFinder({ focus = true } = {}) {
+  resultState.hidden = true;
+  intro.hidden = false;
+  supportSection.hidden = false;
+  resultCards.innerHTML = '';
+  resultNotice.innerHTML = '';
+  input.value = '';
+  updateUrl('');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (focus) setTimeout(() => input.focus(), 250);
+}
+
+form?.addEventListener('submit', event => {
+  event.preventDefault();
+  runSearch(input.value);
+});
+
+backToSearch?.addEventListener('click', () => resetFinder());
+
+window.addEventListener('popstate', () => {
+  const params = new URLSearchParams(window.location.search);
+  const query = params.get('q');
+  if (query) {
+    input.value = query;
+    runSearch(query);
+  } else {
+    resetFinder({ focus: false });
+  }
+});
 
 const params = new URLSearchParams(window.location.search);
 const initialQuery = params.get('q');
-if (initialQuery) { input.value = initialQuery; runSearch(initialQuery); }
+if (initialQuery) {
+  input.value = initialQuery;
+  runSearch(initialQuery);
+}
