@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
-  <meta name="description" content="Find verified Florida law-enforcement non-emergency phone numbers by city, ZIP code, county, or agency.">
+  <meta name="description" content="Find independently verified Florida law-enforcement non-emergency phone numbers by city, ZIP code, county, or agency.">
   <title>Florida Non-Emergency Finder</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,9 +26,9 @@
   <main>
     <section class="hero">
       <div class="hero-inner">
-        <div class="eyebrow">FAST • SIMPLE • VERIFIED SOURCES</div>
+        <div class="eyebrow">FAST • SIMPLE • OFFICIAL SOURCES</div>
         <h1>Find the right non-emergency number.</h1>
-        <p class="hero-copy">Search a Florida city, ZIP code, county, or law-enforcement agency. Tap the result to call.</p>
+        <p class="hero-copy">Search a Florida city, ZIP code, county, or law-enforcement agency. Every published number is independently checked against an official agency or local-government website.</p>
 
         <form id="searchForm" class="search-card" role="search">
           <label for="searchInput">City, ZIP code, county, or agency</label>
@@ -36,7 +36,7 @@
             <input id="searchInput" name="q" type="search" inputmode="search" autocomplete="postal-code" placeholder="Try Palm Coast or 32164" aria-describedby="searchHelp">
             <button type="submit">Search</button>
           </div>
-          <p id="searchHelp" class="search-help">Results use curated public information and link back to the official source.</p>
+          <p id="searchHelp" class="search-help">No third-party phone directory is used as the authority for published numbers.</p>
         </form>
 
         <div class="quick-searches" aria-label="Example searches">
@@ -70,8 +70,8 @@
       <article>
         <span class="info-icon" aria-hidden="true">✓</span>
         <div>
-          <h3>Source-linked</h3>
-          <p>Verified entries include the official agency or government source used for the number.</p>
+          <h3>Independently verified</h3>
+          <p>Published numbers are checked directly against the law-enforcement agency or official local-government website.</p>
         </div>
       </article>
       <article>
@@ -93,10 +93,11 @@
 
   <footer>
     <p><strong>Florida Non-Emergency Finder</strong> is an independent public-information project and is not affiliated with or endorsed by any government agency.</p>
-    <p>Always confirm critical information with the agency. For emergencies, call <a href="tel:911">911</a>.</p>
+    <p>Every listed number links to its official verification source. For emergencies, call <a href="tel:911">911</a>.</p>
   </footer>
 
   <script src="data/agencies.js"></script>
+  <script src="data/verified-expansion.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
