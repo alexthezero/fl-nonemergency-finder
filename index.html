@@ -39,7 +39,13 @@
           <p id="searchHelp" class="search-help">No third-party phone directory is used as the authority for published numbers.</p>
         </form>
 
-        <div class="quick-searches" aria-label="Example searches">
+        <div class="directory-summary" aria-live="polite">
+          <strong id="directoryCount">Loading directory…</strong>
+          <span>independently sourced listings</span>
+        </div>
+
+        <div class="quick-searches" aria-label="Directory actions and example searches">
+          <button type="button" id="browseAll" class="browse-all">Browse all verified agencies</button>
           <span>Try:</span>
           <button type="button" data-query="Palm Coast">Palm Coast</button>
           <button type="button" data-query="Orlando">Orlando</button>
@@ -52,7 +58,7 @@
     <section class="results-section" aria-live="polite" aria-atomic="false">
       <div class="results-header">
         <div>
-          <p class="section-kicker">RESULTS</p>
+          <p class="section-kicker">DIRECTORY</p>
           <h2 id="resultsTitle">Search Florida</h2>
         </div>
         <span id="resultCount" class="result-count"></span>
@@ -61,7 +67,7 @@
         <div class="empty-state">
           <div class="empty-icon" aria-hidden="true">⌕</div>
           <h3>Ready when you are.</h3>
-          <p>Enter a Florida location or agency above to find a non-emergency number.</p>
+          <p>Enter a Florida location or agency above, or browse the full verified directory.</p>
         </div>
       </div>
     </section>
@@ -97,7 +103,8 @@
   </footer>
 
   <script src="data/agencies.js"></script>
-  <script src="data/verified-expansion.js"></script>
+  <script src="data/agencies-expanded.js"></script>
+  <script src="data/municipal-extra.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
