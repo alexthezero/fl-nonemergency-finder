@@ -15,6 +15,7 @@ const resultsTitle = document.getElementById('resultsTitle');
 const resultCount = document.getElementById('resultCount');
 const browseAll = document.getElementById('browseAll');
 const directoryCount = document.getElementById('directoryCount');
+const countyCoverage = document.getElementById('countyCoverage');
 
 const normalize = (value = '') => value
   .toLowerCase()
@@ -27,9 +28,15 @@ const normalize = (value = '') => value
 const compactPhone = phone => phone.replace(/\D/g, '');
 const escapeHtml = value => String(value).replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
 
-if (directoryCount) {
-  directoryCount.textContent = `${agencies.length} verified listings`;
-}
+if (directoryCount) directoryCount.textContent = `${agencies.length} verified listings`;
+
+const countyLawEnforcement = new Set(
+  agencies
+    .filter(agency => normalize(agency.type).includes('sheriff'))
+    .map(agency => normalize(agency.county))
+    .filter(Boolean)
+);
+if (countyCoverage) countyCoverage.textContent = `${countyLawEnforcement.size}/67 county jurisdictions`;
 
 function searchableText(agency) {
   return normalize([
@@ -48,7 +55,6 @@ function scoreAgency(agency, rawQuery) {
   if (!q) return 0;
   const full = searchableText(agency);
   const fields = [agency.agency, agency.city, agency.county, ...(agency.areas || []), ...(agency.zips || [])].map(normalize);
-
   let score = 0;
   if (fields.includes(q)) score += 120;
   if ((agency.zips || []).includes(rawQuery.trim())) score += 150;
@@ -56,11 +62,7 @@ function scoreAgency(agency, rawQuery) {
   if (normalize(agency.city) === q) score += 90;
   if (normalize(agency.county) === q || normalize(`${agency.county} county`) === q) score += 85;
   if (full.includes(q)) score += 45;
-
-  for (const token of q.split(' ').filter(Boolean)) {
-    if (full.includes(token)) score += 10;
-  }
-
+  for (const token of q.split(' ').filter(Boolean)) if (full.includes(token)) score += 10;
   return score;
 }
 
@@ -108,9 +110,7 @@ function showMatches(matches, label, scroll = true) {
 }
 
 function showDirectory() {
-  const sorted = [...agencies].sort((a, b) =>
-    a.county.localeCompare(b.county) || a.agency.localeCompare(b.agency)
-  );
+  const sorted = [...agencies].sort((a, b) => a.county.localeCompare(b.county) || a.agency.localeCompare(b.agency));
   input.value = '';
   history.replaceState(null, '', window.location.pathname);
   showMatches(sorted, 'All verified Florida agencies');
@@ -148,58 +148,29 @@ async function resolveZip(zip) {
 
 async function runSearch(rawQuery) {
   const query = rawQuery.trim();
-  if (!query) {
-    input.focus();
-    return;
-  }
-
+  if (!query) return input.focus();
   const url = new URL(window.location.href);
   url.searchParams.set('q', query);
   history.replaceState(null, '', `${url.pathname}?${url.searchParams.toString()}`);
-
   let matches = findMatches(query);
-  if (matches.length) {
-    showMatches(matches, `Results for “${query}”`);
-    return;
-  }
-
+  if (matches.length) return showMatches(matches, `Results for “${query}”`);
   if (/^\d{5}$/.test(query)) {
     resultsTitle.textContent = `Checking ZIP ${query}…`;
     resultCount.textContent = '';
     const place = await resolveZip(query);
     if (place) {
       matches = findMatches(place);
-      if (matches.length) {
-        showMatches(matches, `${place}, FL • ZIP ${query}`);
-        return;
-      }
-      noMatch(query, `${place} (${query})`);
-      return;
+      if (matches.length) return showMatches(matches, `${place}, FL • ZIP ${query}`);
+      return noMatch(query, `${place} (${query})`);
     }
   }
-
   noMatch(query);
 }
 
-form.addEventListener('submit', event => {
-  event.preventDefault();
-  runSearch(input.value);
-});
-
-document.querySelectorAll('[data-query]').forEach(button => {
-  button.addEventListener('click', () => {
-    input.value = button.dataset.query;
-    runSearch(button.dataset.query);
-  });
-});
-
-if (browseAll) {
-  browseAll.addEventListener('click', showDirectory);
-}
+form.addEventListener('submit', event => { event.preventDefault(); runSearch(input.value); });
+document.querySelectorAll('[data-query]').forEach(button => button.addEventListener('click', () => { input.value = button.dataset.query; runSearch(button.dataset.query); }));
+if (browseAll) browseAll.addEventListener('click', showDirectory);
 
 const params = new URLSearchParams(window.location.search);
 const initialQuery = params.get('q');
-if (initialQuery) {
-  input.value = initialQuery;
-  runSearch(initialQuery);
-}
+if (initialQuery) { input.value = initialQuery; runSearch(initialQuery); }
