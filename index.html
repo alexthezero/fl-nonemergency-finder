@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <meta name="description" content="Find verified Florida law-enforcement non-emergency phone numbers by city, ZIP code, county, or agency.">
+  <title>Florida Non-Emergency Finder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="Florida Non-Emergency Finder home">
+      <span class="brand-mark" aria-hidden="true">FL</span>
+      <span>
+        <strong>Non-Emergency Finder</strong>
+        <small>Florida law enforcement</small>
+      </span>
+    </a>
+    <a class="emergency-link" href="tel:911">Emergency? <strong>Call 911</strong></a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="eyebrow">FAST • SIMPLE • VERIFIED SOURCES</div>
+        <h1>Find the right non-emergency number.</h1>
+        <p class="hero-copy">Search a Florida city, ZIP code, county, or law-enforcement agency. Tap the result to call.</p>
+
+        <form id="searchForm" class="search-card" role="search">
+          <label for="searchInput">City, ZIP code, county, or agency</label>
+          <div class="search-row">
+            <input id="searchInput" name="q" type="search" inputmode="search" autocomplete="postal-code" placeholder="Try Palm Coast or 32164" aria-describedby="searchHelp">
+            <button type="submit">Search</button>
+          </div>
+          <p id="searchHelp" class="search-help">Results use curated public information and link back to the official source.</p>
+        </form>
+
+        <div class="quick-searches" aria-label="Example searches">
+          <span>Try:</span>
+          <button type="button" data-query="Palm Coast">Palm Coast</button>
+          <button type="button" data-query="Orlando">Orlando</button>
+          <button type="button" data-query="Tampa">Tampa</button>
+          <button type="button" data-query="Pensacola">Pensacola</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="results-section" aria-live="polite" aria-atomic="false">
+      <div class="results-header">
+        <div>
+          <p class="section-kicker">RESULTS</p>
+          <h2 id="resultsTitle">Search Florida</h2>
+        </div>
+        <span id="resultCount" class="result-count"></span>
+      </div>
+      <div id="results" class="results-grid">
+        <div class="empty-state">
+          <div class="empty-icon" aria-hidden="true">⌕</div>
+          <h3>Ready when you are.</h3>
+          <p>Enter a Florida location or agency above to find a non-emergency number.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="info-strip">
+      <article>
+        <span class="info-icon" aria-hidden="true">✓</span>
+        <div>
+          <h3>Source-linked</h3>
+          <p>Verified entries include the official agency or government source used for the number.</p>
+        </div>
+      </article>
+      <article>
+        <span class="info-icon" aria-hidden="true">☎</span>
+        <div>
+          <h3>One-tap calling</h3>
+          <p>Phone results are formatted as direct call buttons on mobile devices.</p>
+        </div>
+      </article>
+      <article>
+        <span class="info-icon" aria-hidden="true">!</span>
+        <div>
+          <h3>Not for emergencies</h3>
+          <p>If there is immediate danger, a crime in progress, fire, or a medical emergency, call 911.</p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <p><strong>Florida Non-Emergency Finder</strong> is an independent public-information project and is not affiliated with or endorsed by any government agency.</p>
+    <p>Always confirm critical information with the agency. For emergencies, call <a href="tel:911">911</a>.</p>
+  </footer>
+
+  <script src="data/agencies.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
