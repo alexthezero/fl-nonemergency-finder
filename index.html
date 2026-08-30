@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#07111f">
+  <meta name="theme-color" content="#f7f8fa">
   <meta name="description" content="Find independently verified Florida law-enforcement non-emergency phone numbers by city, ZIP code, county, or agency.">
   <title>Florida Non-Emergency Finder</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,82 +11,108 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="finder-page">
+  <div class="emergency-banner" role="note">
+    <div class="emergency-inner">
+      <span>Emergency or immediate danger?</span>
+      <a href="tel:911">Call 911</a>
+    </div>
+  </div>
+
   <header class="site-header">
-    <a class="brand" href="./" aria-label="Florida Non-Emergency Finder home">
-      <span class="brand-mark" aria-hidden="true">FL</span>
-      <span><strong>Non-Emergency Finder</strong><small>Florida law enforcement</small></span>
-    </a>
-    <a class="emergency-link" href="tel:911">Emergency? <strong>Call 911</strong></a>
+    <div class="header-inner">
+      <a class="brand" href="./" aria-label="Florida Non-Emergency Finder home">
+        <span class="brand-mark" aria-hidden="true">FL</span>
+        <span class="brand-copy">
+          <strong>Non-Emergency Finder</strong>
+          <small>Florida law enforcement</small>
+        </span>
+      </a>
+      <a class="header-link" href="directory/">Browse directory</a>
+    </div>
   </header>
 
   <main>
-    <section class="hero">
-      <div class="hero-inner">
-        <div class="eyebrow">FAST • SIMPLE • OFFICIAL SOURCES</div>
+    <section id="finderIntro" class="finder-intro">
+      <div class="utility-container">
+        <p class="eyebrow">Florida law enforcement</p>
         <h1>Find the right non-emergency number.</h1>
-        <p class="hero-copy">Search a Florida city, ZIP code, county, or law-enforcement agency. Every published number is independently checked against an official agency or local-government website.</p>
+        <p class="intro-copy">Enter a Florida city, ZIP code, county, or agency. We’ll show the best verified law-enforcement contact and make it easy to call.</p>
 
-        <form id="searchForm" class="search-card" role="search">
-          <label for="searchInput">City, ZIP code, county, or agency</label>
+        <form id="searchForm" class="finder-search" role="search">
+          <label for="searchInput">Where do you need law enforcement?</label>
           <div class="search-row">
-            <input id="searchInput" name="q" type="search" inputmode="search" autocomplete="postal-code" placeholder="Try Palm Coast or 32164" aria-describedby="searchHelp">
-            <button type="submit">Search</button>
+            <input id="searchInput" name="q" type="search" inputmode="search" autocomplete="postal-code" placeholder="City, ZIP code, county, or agency" aria-describedby="searchHelp">
+            <button type="submit">Find number</button>
           </div>
-          <p id="searchHelp" class="search-help">No third-party phone directory is used as the authority for published numbers.</p>
+          <p id="searchHelp" class="search-help">
+            <span class="verification-dot" aria-hidden="true"></span>
+            Numbers are checked against official agency or government websites.
+          </p>
         </form>
 
-        <div class="directory-summary" aria-live="polite">
-          <strong id="directoryCount">Loading directory…</strong><span>•</span><strong id="countyCoverage">Checking county coverage…</strong>
+        <div class="finder-stats" aria-live="polite">
+          <span><strong id="directoryCount">Loading…</strong> verified listings</span>
+          <span class="stat-divider" aria-hidden="true"></span>
+          <span><strong id="countyCoverage">Loading…</strong> county coverage</span>
         </div>
 
-        <div class="quick-searches" aria-label="Directory actions and example searches">
-          <button type="button" id="browseAll" class="browse-all">Browse all verified agencies</button>
-          <span>Try:</span>
-          <button type="button" data-query="Palm Coast">Palm Coast</button>
-          <button type="button" data-query="Miami">Miami</button>
-          <button type="button" data-query="Orlando">Orlando</button>
-          <button type="button" data-query="Tampa">Tampa</button>
+        <div class="jurisdiction-tip">
+          <div class="tip-icon" aria-hidden="true">i</div>
+          <div>
+            <strong>ZIP codes do not always match police boundaries.</strong>
+            <p>Some ZIP codes cross county or city jurisdictions. When we know an area overlaps, we’ll tell you instead of guessing.</p>
+          </div>
         </div>
+
+        <p class="directory-link-line">Looking for a specific department? <a href="directory/">Browse the full Florida directory</a>.</p>
       </div>
     </section>
 
-    <section class="results-section" aria-live="polite" aria-atomic="false">
-      <div class="results-header">
-        <div><p class="section-kicker">DIRECTORY</p><h2 id="resultsTitle">Search Florida</h2></div>
-        <span id="resultCount" class="result-count"></span>
-      </div>
-
-      <div class="directory-tools" aria-label="Directory filters">
-        <label>County
-          <select id="countyFilter"><option value="">All counties</option></select>
-        </label>
-        <label>Agency type
-          <select id="typeFilter"><option value="">All agency types</option></select>
-        </label>
-        <button type="button" id="applyFilters">Browse directory</button>
-        <button type="button" id="clearFilters" class="secondary-tool">Clear</button>
-      </div>
-
-      <div id="results" class="results-grid">
-        <div class="empty-state">
-          <div class="empty-icon" aria-hidden="true">⌕</div>
-          <h3>Ready when you are.</h3>
-          <p>Enter a Florida location or agency above, or browse the full verified directory.</p>
+    <section id="resultState" class="result-state" hidden aria-live="polite" aria-atomic="false">
+      <div class="utility-container">
+        <button type="button" id="backToSearch" class="back-link">← Search another location</button>
+        <div class="result-heading">
+          <p class="eyebrow">Search result</p>
+          <h2 id="resultTitle">Your non-emergency contact</h2>
         </div>
+        <div id="resultNotice"></div>
+        <div id="resultCards" class="focused-results"></div>
       </div>
     </section>
 
-    <section class="info-strip">
-      <article><span class="info-icon" aria-hidden="true">✓</span><div><h3>Independently verified</h3><p>Published numbers are checked directly against the law-enforcement agency or official local-government website.</p></div></article>
-      <article><span class="info-icon" aria-hidden="true">☎</span><div><h3>Statewide county coverage</h3><p>All 67 Florida county sheriff or consolidated county law-enforcement jurisdictions are represented, plus a growing municipal police directory.</p></div></article>
-      <article><span class="info-icon" aria-hidden="true">!</span><div><h3>Not for emergencies</h3><p>If there is immediate danger, a crime in progress, fire, or a medical emergency, call 911.</p></div></article>
+    <section id="supportSection" class="support-section">
+      <div class="support-grid">
+        <article>
+          <span class="support-number">01</span>
+          <h2>Search your location</h2>
+          <p>Use a city, ZIP code, county, or agency name.</p>
+        </article>
+        <article>
+          <span class="support-number">02</span>
+          <h2>Check the jurisdiction</h2>
+          <p>We flag known overlaps instead of silently choosing the wrong agency.</p>
+        </article>
+        <article>
+          <span class="support-number">03</span>
+          <h2>Call the verified number</h2>
+          <p>Every published listing includes its official verification source.</p>
+        </article>
+      </div>
     </section>
   </main>
 
-  <footer>
-    <p><strong>Florida Non-Emergency Finder</strong> is an independent public-information project and is not affiliated with or endorsed by any government agency.</p>
-    <p>Every listed number links to its official verification source. For emergencies, call <a href="tel:911">911</a>.</p>
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <strong>Florida Non-Emergency Finder</strong>
+        <p>An independent public-information project. Not affiliated with or endorsed by any government agency.</p>
+      </div>
+      <div class="footer-links">
+        <a href="directory/">Directory</a>
+        <a href="tel:911">Emergency: 911</a>
+      </div>
+    </div>
   </footer>
 
   <script src="data/agencies.js"></script>
