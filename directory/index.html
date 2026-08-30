@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f8fa">
+  <meta name="description" content="Browse verified Florida law-enforcement non-emergency phone numbers by county and agency type.">
+  <title>Florida Law Enforcement Directory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="directory-page">
+  <div class="emergency-banner" role="note">
+    <div class="emergency-inner">
+      <span>Emergency or immediate danger?</span>
+      <a href="tel:911">Call 911</a>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="../" aria-label="Florida Non-Emergency Finder home">
+        <span class="brand-mark" aria-hidden="true">FL</span>
+        <span class="brand-copy">
+          <strong>Non-Emergency Finder</strong>
+          <small>Florida law enforcement</small>
+        </span>
+      </a>
+      <a class="header-link" href="../">Find my number</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="directory-shell">
+      <div class="directory-topline">
+        <a class="directory-back" href="../">← Back to finder</a>
+      </div>
+
+      <section class="directory-heading">
+        <p class="eyebrow">Verified Florida directory</p>
+        <h1>Browse law-enforcement non-emergency numbers.</h1>
+        <p>Search agencies directly or narrow the list by county and agency type. Every published number links back to the official agency or government source used to verify it.</p>
+      </section>
+
+      <div class="directory-summary-bar" aria-live="polite">
+        <span class="summary-chip"><strong id="directoryListingCount">—</strong> verified listings</span>
+        <span class="summary-chip"><strong id="directoryCountyCount">—</strong> counties represented</span>
+        <span class="summary-chip">Official-source verification</span>
+      </div>
+
+      <section class="directory-controls" aria-label="Directory search and filters">
+        <div class="control-group">
+          <label for="directorySearch">Search directory</label>
+          <input id="directorySearch" type="search" placeholder="Agency, city, county, or ZIP">
+        </div>
+        <div class="control-group">
+          <label for="countyFilter">County</label>
+          <select id="countyFilter"><option value="">All counties</option></select>
+        </div>
+        <div class="control-group">
+          <label for="typeFilter">Agency type</label>
+          <select id="typeFilter"><option value="">All agency types</option></select>
+        </div>
+      </section>
+
+      <section aria-live="polite">
+        <div class="directory-results-header">
+          <h2>Agencies</h2>
+          <span id="directoryResultCount"></span>
+        </div>
+        <div id="directoryResults" class="directory-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <strong>Florida Non-Emergency Finder</strong>
+        <p>An independent public-information project. Verify critical information with the agency. For emergencies, call 911.</p>
+      </div>
+      <div class="footer-links">
+        <a href="../">Finder</a>
+        <a href="tel:911">Emergency: 911</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../data/agencies.js"></script>
+  <script src="../data/agencies-expanded.js"></script>
+  <script src="../data/county-completion.js"></script>
+  <script src="../data/municipal-extra.js"></script>
+  <script src="../data/major-municipal.js"></script>
+  <script src="directory.js"></script>
+</body>
+</html>
