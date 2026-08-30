@@ -33,6 +33,7 @@ const normalize = (value = '') => value
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
   .replace(/[^a-z0-9\s-]/g, ' ')
+  .replace(/\bsaint\b/g, 'st')
   .replace(/\s+/g, ' ')
   .trim();
 
